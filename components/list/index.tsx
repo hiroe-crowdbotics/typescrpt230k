@@ -2,7 +2,6 @@ import * as React from 'react';
 import classNames from 'classnames';
 
 import extendsObject from '../_util/extendsObject';
-import type { Breakpoint } from '../_util/responsiveObserver';
 import { responsiveArray } from '../_util/responsiveObserver';
 import { ConfigContext } from '../config-provider';
 import { useComponentConfig } from '../config-provider/context';
@@ -57,7 +56,7 @@ export interface ListProps<T> {
   pagination?: PaginationConfig | false;
   prefixCls?: string;
   rowKey?: ((item: T) => React.Key) | keyof T;
-  renderItem?: (item: T, index: number) => React.ReactNode;
+  renderItem?: React.ReactNode /* 👈 5.25.0+ */ | ((item: T, index: number) => React.ReactNode);
   size?: ListSize;
   split?: boolean;
   header?: React.ReactNode;
@@ -69,9 +68,9 @@ export interface ListLocale {
   emptyText: React.ReactNode;
 }
 
-function InternalList<T>(
-  {
-    pagination = false as ListProps<T>['pagination'],
+function InternalList<T>(props: ListProps<T>, ref: React.ForwardedRef<HTMLDivElement>) {
+  const {
+    pagination = false,
     prefixCls: customizePrefixCls,
     bordered = false,
     split = true,
@@ -91,9 +90,8 @@ function InternalList<T>(
     renderItem,
     locale,
     ...rest
-  }: ListProps<T>,
-  ref: React.ForwardedRef<HTMLDivElement>,
-) {
+  } = props;
+
   const paginationObj = pagination && typeof pagination === 'object' ? pagination : {};
 
   const [paginationCurrent, setPaginationCurrent] = React.useState(
@@ -128,7 +126,9 @@ function InternalList<T>(
   const onPaginationShowSizeChange = triggerPaginationEvent('onShowSizeChange');
 
   const renderInnerItem = (item: T, index: number) => {
-    if (!renderItem) return null;
+    if (renderItem === null || renderItem === undefined) {
+      return null;
+    }
 
     let key: any;
 
@@ -144,10 +144,14 @@ function InternalList<T>(
       key = `list-item-${index}`;
     }
 
-    return <React.Fragment key={key}>{renderItem(item, index)}</React.Fragment>;
+    return (
+      <React.Fragment key={key}>
+        {typeof renderItem === 'function' ? renderItem(item, index) : renderItem}
+      </React.Fragment>
+    );
   };
 
-  const isSomethingAfterLastItem = () => !!(loadMore || pagination || footer);
+  const isSomethingAfterLastItem = !!(loadMore || pagination || footer);
 
   const prefixCls = getPrefixCls('list', customizePrefixCls);
 
@@ -187,7 +191,7 @@ function InternalList<T>(
       [`${prefixCls}-bordered`]: bordered,
       [`${prefixCls}-loading`]: isLoading,
       [`${prefixCls}-grid`]: !!grid,
-      [`${prefixCls}-something-after-last-item`]: isSomethingAfterLastItem(),
+      [`${prefixCls}-something-after-last-item`]: isSomethingAfterLastItem,
       [`${prefixCls}-rtl`]: direction === 'rtl',
     },
     contextClassName,
@@ -236,9 +240,10 @@ function InternalList<T>(
     ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'].includes(key),
   );
   const screens = useBreakpoint(needResponsive);
+
   const currentBreakpoint = React.useMemo(() => {
     for (let i = 0; i < responsiveArray.length; i += 1) {
-      const breakpoint: Breakpoint = responsiveArray[i];
+      const breakpoint = responsiveArray[i];
       if (screens[breakpoint]) {
         return breakpoint;
       }
@@ -262,7 +267,7 @@ function InternalList<T>(
 
   let childrenContent: React.ReactNode = isLoading && <div style={{ minHeight: 53 }} />;
   if (splitDataSource.length > 0) {
-    const items = splitDataSource.map((item: T, index: number) => renderInnerItem(item, index));
+    const items = splitDataSource.map(renderInnerItem);
     childrenContent = grid ? (
       <Row gutter={grid.gutter}>
         {React.Children.map(items, (child) => (
