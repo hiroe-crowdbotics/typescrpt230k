@@ -93,10 +93,13 @@ export default function useIcons({
     mergedRemoveIcon = <CloseOutlined />;
   }
 
-  return {
-    clearIcon: mergedClearIcon,
-    suffixIcon: mergedSuffixIcon,
-    itemIcon: mergedItemIcon,
-    removeIcon: mergedRemoveIcon,
-  };
+  return React.useMemo(
+    () => ({
+      clearIcon: mergedClearIcon,
+      suffixIcon: mergedSuffixIcon,
+      itemIcon: mergedItemIcon,
+      removeIcon: mergedRemoveIcon,
+    }),
+    [mergedClearIcon, mergedItemIcon, mergedRemoveIcon, mergedSuffixIcon],
+  );
 }

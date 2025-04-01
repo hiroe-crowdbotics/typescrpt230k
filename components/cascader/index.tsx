@@ -283,6 +283,7 @@ const Cascader = React.forwardRef<CascaderRef, CascaderProps<any>>((props, ref) 
 
   // ===================== Icons =====================
   const showSuffixIcon = useShowArrow(props.suffixIcon, showArrow);
+
   const { suffixIcon, removeIcon, clearIcon } = useIcons({
     ...props,
     hasFeedback,
